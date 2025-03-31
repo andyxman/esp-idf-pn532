@@ -74,6 +74,7 @@ esp_err_t pn532_new_driver_hsu(gpio_num_t uart_rx,
     io_handle->pn532_read = pn532_read;
     io_handle->pn532_write = pn532_write;
     io_handle->pn532_init_extra = pn532_init_extra;
+    io_handle->pn532_is_ready = NULL;
 
 #ifdef CONFIG_ENABLE_IRQ_ISR
     io_handle->IRQQueue = NULL;
