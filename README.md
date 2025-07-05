@@ -1,5 +1,5 @@
 # esp-idf-pn532
-ESP-IDF component for the PN532 NFC controller. The component can be used with I2C or with HSU (UART) interface.
+ESP-IDF component for the PN532 NFC controller. The component can be used with I2C, HSU (UART) or with SPI interface.
 
 ## Installation
 
