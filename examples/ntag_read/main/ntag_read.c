@@ -8,13 +8,14 @@
 #include "sdkconfig.h"
 #include "pn532_driver_i2c.h"
 #include "pn532_driver_hsu.h"
+#include "pn532_driver_spi.h"
 #include "pn532.h"
 
 
 // select ONLY ONE interface for the PN532
 #define PN532_MODE_I2C 0
-#define PN532_MODE_HSU 1
-#define PN532_MODE_SPI 0
+#define PN532_MODE_HSU 0
+#define PN532_MODE_SPI 1
 
 #if PN532_MODE_I2C
 
@@ -37,7 +38,18 @@
 
 #elif PN532_MODE_SPI
 
-#error SPI is not implemented
+// SPI mode needs only CS, SCK, MISO and MOSI pins.
+// If at least one of CS, SCK, MISO and MOSI is set to -1 the SPI host must be configured outside the library.
+// IRQ pin can be used in polling mode or in interrupt mode. Use menuconfig to select mode.
+#define RESET_PIN      (-1)
+#define IRQ_PIN        (6)
+//#define IRQ_PIN        (-1)
+#define SPI_CS         (5)
+#define SPI_SCK        (2)
+#define SPI_MISO       (3)
+#define SPI_MOSI       (4)
+#define SPI_HOST_NFC   (SPI3_HOST)
+#define SPI_CLOCKRATE  (1000000)
 
 #endif
 
@@ -55,8 +67,10 @@ void app_main()
     esp_log_level_set("PN532", ESP_LOG_DEBUG);
     esp_log_level_set("pn532_driver", ESP_LOG_DEBUG);
     esp_log_level_set("pn532_driver_i2c", ESP_LOG_DEBUG);
-    esp_log_level_set("pn532_driver_hsu", ESP_LOG_DEBUG);
     esp_log_level_set("i2c.master", ESP_LOG_DEBUG);
+    esp_log_level_set("pn532_driver_hsu", ESP_LOG_DEBUG);
+    esp_log_level_set("pn532_driver_spi", ESP_LOG_DEBUG);
+    esp_log_level_set("spi", ESP_LOG_DEBUG);
 #endif
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -76,6 +90,20 @@ void app_main()
                                          HSU_UART_PORT,
                                          HSU_BAUD_RATE,
                                          &pn532_io));
+
+#elif PN532_MODE_SPI
+
+    ESP_LOGI(TAG, "init PN532 in SPI mode");
+    ESP_ERROR_CHECK(pn532_new_driver_spi(
+        SPI_MISO,
+        SPI_MOSI,
+        SPI_SCK,
+        SPI_CS,
+        -1,
+        IRQ_PIN,
+        SPI_HOST_NFC,
+        SPI_CLOCKRATE,
+        &pn532_io));
 
 #endif
 

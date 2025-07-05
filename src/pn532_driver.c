@@ -324,7 +324,7 @@ esp_err_t pn532_wait_ready(pn532_io_handle_t io_handle, int32_t timeout)
             if (timer > timeout)
             {
 #ifdef CONFIG_PN532DEBUG
-                ESP_LOGE (TAG, "Wait ready TIMEOUT after %d ms!",timeout);
+                ESP_LOGE (TAG, "Wait ready TIMEOUT after %d ms!", (int)timeout);
 #endif
                 return ESP_ERR_TIMEOUT;
             }
