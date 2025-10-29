@@ -18,6 +18,12 @@ extern "C"
                                    i2c_port_num_t i2c_port_number,
                                    pn532_io_handle_t io_handle);
 
+    esp_err_t pn532_new_driver_i2c_with_external_bus(i2c_master_bus_handle_t external_bus_handle,
+                                                 i2c_port_num_t i2c_port_number,
+                                                 gpio_num_t reset,
+                                                 gpio_num_t irq,
+                                                 pn532_io_handle_t io_handle);
+
 #ifdef __cplusplus
 }
 #endif

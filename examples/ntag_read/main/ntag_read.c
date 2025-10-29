@@ -13,18 +13,19 @@
 
 
 // select ONLY ONE interface for the PN532
-#define PN532_MODE_I2C 0
+#define PN532_MODE_I2C 1
 #define PN532_MODE_HSU 0
-#define PN532_MODE_SPI 1
+#define PN532_MODE_SPI 0
 
 #if PN532_MODE_I2C
 
 // I2C mode needs only SDA, SCL and IRQ pins. RESET pin will be used if valid.
 // IRQ pin can be used in polling mode or in interrupt mode. Use menuconfig to select mode.
-#define SCL_PIN    (0)
-#define SDA_PIN    (1)
+#define SCL_PIN    (4)
+#define SDA_PIN    (3)
 #define RESET_PIN  (-1)
-#define IRQ_PIN    (3)
+#define IRQ_PIN    (-1)
+#define USE_EX_BUS_HANDLE (1)
 
 #elif PN532_MODE_HSU
 
@@ -59,7 +60,7 @@ void app_main()
 {
     pn532_io_t pn532_io;
     esp_err_t err;
-
+    i2c_master_bus_handle_t codec_i2c_bus_;
     printf("APP MAIN\n");
 
 #if 0
@@ -78,7 +79,25 @@ void app_main()
 #if PN532_MODE_I2C
 
     ESP_LOGI(TAG, "init PN532 in I2C mode");
+#if USE_EX_BUS_HANDLE
+    i2c_master_bus_config_t i2c_bus_cfg = {
+        .i2c_port = I2C_NUM_0,
+        .sda_io_num = SDA_PIN,
+        .scl_io_num = SCL_PIN,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0,
+        .trans_queue_depth = 0,
+        .flags = {
+            .enable_internal_pullup = 1,
+        },
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &codec_i2c_bus_));
+
+    ESP_ERROR_CHECK(pn532_new_driver_i2c_with_external_bus(codec_i2c_bus_, 0, RESET_PIN, IRQ_PIN, &pn532_io));
+#else
     ESP_ERROR_CHECK(pn532_new_driver_i2c(SDA_PIN, SCL_PIN, RESET_PIN, IRQ_PIN, 0, &pn532_io));
+#endif /* USE_EX_BUS_HANDLE */
 
 #elif PN532_MODE_HSU
 

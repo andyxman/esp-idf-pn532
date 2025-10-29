@@ -14,6 +14,7 @@ typedef struct {
     i2c_master_bus_handle_t i2c_bus_handle;
     i2c_master_dev_handle_t i2c_dev_handle;
     bool bus_created;
+    bool external_bus_handle;
     uint8_t frame_buffer[256];
 } pn532_i2c_driver_config;
 
@@ -51,6 +52,52 @@ esp_err_t pn532_new_driver_i2c(gpio_num_t sda,
     dev_config->scl = scl;
     dev_config->sda = sda;
     dev_config->bus_created = false;
+    dev_config->external_bus_handle = false;
+    io_handle->driver_data = dev_config;
+
+    io_handle->pn532_init_io = pn532_init_io;
+    io_handle->pn532_release_io = pn532_release_io;
+    io_handle->pn532_release_driver = pn532_release_driver;
+    io_handle->pn532_read = pn532_read;
+    io_handle->pn532_write = pn532_write;
+    io_handle->pn532_init_extra = NULL;
+    io_handle->pn532_is_ready = pn532_is_ready;
+
+#ifdef CONFIG_ENABLE_IRQ_ISR
+    io_handle->IRQQueue = NULL;
+#endif
+
+    return ESP_OK;
+}
+
+esp_err_t pn532_new_driver_i2c_with_external_bus(i2c_master_bus_handle_t external_bus_handle,
+                                                 i2c_port_num_t i2c_port_number,
+                                                 gpio_num_t reset,
+                                                 gpio_num_t irq,
+                                                 pn532_io_handle_t io_handle)
+{
+    if (io_handle == NULL)
+        return ESP_ERR_INVALID_ARG;
+
+    if (external_bus_handle == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    pn532_i2c_driver_config *dev_config = heap_caps_calloc(1, sizeof(pn532_i2c_driver_config), MALLOC_CAP_DEFAULT);
+    if (dev_config == NULL) {
+        return ESP_ERR_NO_MEM;
+    }
+
+    io_handle->reset = reset;
+    io_handle->irq = irq;
+
+    // 设置外部总线句柄
+    dev_config->i2c_bus_handle = external_bus_handle;
+    dev_config->external_bus_handle = true;
+    dev_config->bus_created = false;
+    dev_config->scl = GPIO_NUM_NC;
+    dev_config->sda = GPIO_NUM_NC;
+    dev_config->i2c_port_number = i2c_port_number;  // 无效值，因为我们使用外部句柄
     io_handle->driver_data = dev_config;
 
     io_handle->pn532_init_io = pn532_init_io;
@@ -114,6 +161,10 @@ esp_err_t pn532_init_io(pn532_io_handle_t io_handle)
         if (i2c_master_get_bus_handle(driver_config->i2c_port_number, &driver_config->i2c_bus_handle) != ESP_OK) {
             ESP_LOGE(TAG, "i2c_master_get_bus_handle() failed");
             return ESP_FAIL;
+        }
+        else 
+        {
+            ESP_LOGI(TAG, "use external bus");
         }
     }
 
